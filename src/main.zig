@@ -6,16 +6,16 @@ const process = std.process;
 const mem = std.mem;
 const print = std.debug.print;
 
-const png_CHUNK_IHDR =  struct {
-    length: u32 align(1),
-    chunk_type: u32 align(1),
-    data: png_IHDR align(1),
-    crc: u32 align(1),
+const png_CHUNK_IHDR = packed struct {
+    length: u32 ,
+    chunk_type: u32 ,
+    data: png_IHDR,
+    crc: u32 ,
 };
 
-const png_IHDR = struct {
-    width: u32 align(1),
-    height: u32 align(1),
+const png_IHDR = packed struct {
+    width: u32,
+    height: u32,
     bit_depth: u8,
     color_type: u8,
     compression_method: u8,
@@ -53,19 +53,24 @@ pub fn main() !void {
         const chunk_size = @sizeOf(png_CHUNK_IHDR);
         @memcpy(@ptrCast([*]u8, &chunk), @ptrCast([*]const u8, &data[offset..]), chunk_size);
 
+        print("chunk type: {d}\n", .{chunk.chunk_type});
+
         chunk.length = @byteSwap(chunk.length);
         chunk.data.width = @byteSwap(chunk.data.width);
         chunk.data.height = @byteSwap(chunk.data.height);
 
-        if (chunk.chunk_type == 0x52444849){
-            break chunk;
-        } else if(offset >= data.len){
-            _ = try io.getStdErr().write("No IHDR chunk found");
-            return;
-        } else {
-            offset += 1;
-            continue;
-        }
+        print("chunk type: {d}\n", .{chunk.chunk_type});
+
+        return;
+        // if (chunk.chunk_type == 0x52444849){
+        //     break chunk;
+        // } else if(offset >= data.len){
+        //     _ = try io.getStdErr().write("No IHDR chunk found");
+        //     return;
+        // } else {
+        //     offset += 1;
+        //     continue;
+        // }
     };
     defer allocator.destroy(iHDR);
 
