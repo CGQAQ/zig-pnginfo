@@ -4,17 +4,18 @@ const os = std.os;
 const fs = std.fs;
 const process = std.process;
 const mem = std.mem;
+const print = std.debug.print;
 
-const png_CHUNK_IHDR = packed struct {
-    length: u32,
-    chunk_type: u32,
-    data: png_IHDR,
-    crc: u32,
+const png_CHUNK_IHDR =  struct {
+    length: u32 align(1),
+    chunk_type: u32 align(1),
+    data: png_IHDR align(1),
+    crc: u32 align(1),
 };
 
-const png_IHDR = packed struct {
-    width: u32,
-    height: u32,
+const png_IHDR = struct {
+    width: u32 align(1),
+    height: u32 align(1),
     bit_depth: u8,
     color_type: u8,
     compression_method: u8,
@@ -30,6 +31,7 @@ pub fn main() !void {
 
     if (args.len != 2) {
         _ = try io.getStdErr().write("Usage: zig-pnginfo <file.png>");
+        return;
     }
 
     // resolve the path
@@ -47,21 +49,31 @@ pub fn main() !void {
     var offset: usize = 8;
     var iHDR = while(true) {
         // find the ihdr chunk
-        var chunk: png_CHUNK_IHDR = undefined;
+        var chunk: *png_CHUNK_IHDR = allocator.create(png_CHUNK_IHDR) catch unreachable;
         const chunk_size = @sizeOf(png_CHUNK_IHDR);
         @memcpy(@ptrCast([*]u8, &chunk), @ptrCast([*]const u8, &data[offset..]), chunk_size);
-        std.debug.print("{u32}", .{chunk.chunk_type});
-        return;
-        // if (chunk.chunk_type == 0x49484452){
-        //     break chunk;
-        // } else if(offset >= data.len){
-        //     _ = try io.getStdErr().write("No IHDR chunk found");
-        //     return;
-        // } else {
-        //     offset += 1;
-        //     continue;
-        // }
-    };
+        // std.debug.print("chunk type: {x}\n", .{chunk.chunk_type});
+        // print("align: {d} {d}\n", .{@alignOf(png_CHUNK_IHDR), @alignOf(png_IHDR)});
 
-    std.debug.print("width: {}", .{iHDR});
+        chunk.length = @byteSwap(chunk.length);
+        chunk.data.width = @byteSwap(chunk.data.width);
+        chunk.data.height = @byteSwap(chunk.data.height);
+
+        // return;
+        // print("{x}, {x}, {}\n", .{chunk.chunk_type, 0x52444849, chunk.chunk_type == 0x52444849});
+
+        if (chunk.chunk_type == 0x52444849){
+            break chunk;
+        } else if(offset >= data.len){
+            _ = try io.getStdErr().write("No IHDR chunk found");
+            return;
+        } else {
+            offset += 1;
+            continue;
+        }
+    };
+    defer allocator.destroy(iHDR);
+
+
+    std.debug.print("{}", .{iHDR});
 }
