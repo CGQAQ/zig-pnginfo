@@ -52,15 +52,10 @@ pub fn main() !void {
         var chunk: *png_CHUNK_IHDR = allocator.create(png_CHUNK_IHDR) catch unreachable;
         const chunk_size = @sizeOf(png_CHUNK_IHDR);
         @memcpy(@ptrCast([*]u8, &chunk), @ptrCast([*]const u8, &data[offset..]), chunk_size);
-        // std.debug.print("chunk type: {x}\n", .{chunk.chunk_type});
-        // print("align: {d} {d}\n", .{@alignOf(png_CHUNK_IHDR), @alignOf(png_IHDR)});
 
         chunk.length = @byteSwap(chunk.length);
         chunk.data.width = @byteSwap(chunk.data.width);
         chunk.data.height = @byteSwap(chunk.data.height);
-
-        // return;
-        // print("{x}, {x}, {}\n", .{chunk.chunk_type, 0x52444849, chunk.chunk_type == 0x52444849});
 
         if (chunk.chunk_type == 0x52444849){
             break chunk;
